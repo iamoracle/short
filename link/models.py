@@ -2,12 +2,14 @@ from django.db.models import Model, SlugField, URLField, UUIDField
 
 from uuid import uuid4
 
+from .validators import url_exists
+
 class Link(Model):
 
     """[summary] the database representation of a link
     """
 
-    link = URLField(max_length=1024)
+    url = URLField(max_length=1024, validators=(url_exists,))
     """[summary] this represents the link the  
     """
 

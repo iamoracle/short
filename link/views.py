@@ -78,53 +78,56 @@ class LinkView(CreateAPIView, DestroyAPIView):
 
     def post(self, request, *args, **kwargs):
 
-        """[summary]
-
-        Returns:
-            [type]: [description]
+        """[summary] add a new link
         """
-
-        # Retrieve token from post data with key 'h-captcha-response'.
-        token = request.data.get('h-captcha-response', False)
-
-        # if the token is False that means token is empty
-        if not token:
-
-            message = {'h-captcha-response': 'hcaptcha token is empty'}
-
-            return Response(message, status=HTTP_400_BAD_REQUEST)
-
-        # Build payload with secret key and token.
-        data = {'secret': env('HCAPTCHA_SECRET_KEY'), 'response': token}
-
-        # we can't trust our request to go through 100% of the time
-        # so we will try and catch errors as they happen
-        try:
-
-            # Make POST request with data payload to hCaptcha API endpoint.
-            response = post(url=env('HCAPTCHA_VERIFY_URL'), data=data)
-
-        except RequestException:
-
-            message = {'h-captcha-response': 'unknown error while processing hcaptcha token'}
-
-            return Response(message, status=HTTP_400_BAD_REQUEST)
         
-        # Parse JSON from response.
-        response = response.json()
+        # hcaptcha doesn't work on localhost, therefore, we are going to use it only
+        # when we go live!
+        if not env('DEBUG'):
 
-        # Check for success or error codes.
-        # Note success can either be True or False
-        success = response['success'] or False
+            # Retrieve token from post data with key 'h-captcha-response'.
+            token = request.data.get('h-captcha-response', False)
 
-        # if successful call django restframework create method
-        if success:
+            # if the token is False that means token is empty
+            if not token:
 
-            return self.create(request, *args, **kwargs)
+                message = {'h-captcha-response': 'hcaptcha token is empty'}
 
-        message = {'h-captcha-response': 'invalid hcaptcha token'}
+                return Response(message, status=HTTP_400_BAD_REQUEST)
 
-        return Response(message, status=HTTP_400_BAD_REQUEST)
+            # Build payload with secret key and token.
+            data = {'secret': env('HCAPTCHA_SECRET_KEY'), 'response': token}
+
+            # we can't trust our request to go through 100% of the time
+            # so we will try and catch errors as they happen
+            try:
+
+                # Make POST request with data payload to hCaptcha API endpoint.
+                response = post(url=env('HCAPTCHA_VERIFY_URL'), data=data)
+
+            except RequestException:
+
+                message = {
+                    'h-captcha-response': 'unknown error while processing hcaptcha token'}
+
+                return Response(message, status=HTTP_400_BAD_REQUEST)
+
+            # Parse JSON from response.
+            response = response.json()
+
+            # Check for success or error codes.
+            # Note success can either be True or False
+            success = response['success'] or False
+
+            # only if successful call django restframework create method
+            if not success:
+
+                message = {'h-captcha-response': 'invalid hcaptcha token'}
+
+                return Response(message, status=HTTP_400_BAD_REQUEST)
+
+        # initiate the create request
+        return self.create(request, *args, **kwargs)
 
 
     def delete(self, request, slug, secret, *args, **kwargs):

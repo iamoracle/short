@@ -1,9 +1,19 @@
-from django.db.models import Model
+from django.db.models import Model, SlugField, URLField, UUIDField
 
-# Create your models here.
+from uuid import uuid4
 
 class Link(Model):
 
-    link = URLField(max_length=1024)
+    """[summary] the database representation of a link
+    """
 
-    slug = SlugField(max_length=16)
+    link = URLField(max_length=1024)
+    """[summary] this represents the link the  
+    """
+
+    slug = SlugField(max_length=16, unique=True)
+    """[summary] this slug or shortened version of the link  
+    """
+
+    secret = UUIDField(default=uuid4)
+    """[summary] user must provide this secret when they want to delete the link """

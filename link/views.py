@@ -1,5 +1,7 @@
 from rest_framework.generics import CreateAPIView, DestroyAPIView
 
+from rest_framework.views import APIView
+
 from .serializers import LinkSerializer
 
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED
@@ -10,7 +12,7 @@ from requests.exceptions import RequestException
 
 import json
 
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 
 from .models import Link
 
@@ -130,9 +132,18 @@ class LinkView(CreateAPIView, DestroyAPIView):
         return self.create(request, *args, **kwargs)
 
 
-    def delete(self, request, slug, secret, *args, **kwargs):
+    def get(self, request, slug, secret, *args, **kwargs):
 
         """[summary] deletes a link
         """
 
         return self.destroy(request, slug, secret, *args, **kwargs)
+
+
+class RedirectView(APIView):
+
+    def get(self, request, slug, *args, **kwargs):
+
+        obj = get_object_or_404(Link, slug=slug)
+
+        return redirect(obj.url)

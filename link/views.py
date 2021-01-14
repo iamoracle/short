@@ -12,11 +12,11 @@ from requests.exceptions import RequestException
 
 import json
 
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404
 
 from .models import Link
 
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, SAFE_METHODS
 
 from rest_framework.response import Response
 
@@ -28,7 +28,7 @@ env = environ.Env()
 # start loading the variables into memory
 environ.Env.read_env()
 
-class LinkView(CreateAPIView, DestroyAPIView):
+class LinkView(CreateAPIView, DestroyAPIView, RetrieveAPIView):
 
     """[summary] this view provides support for adding and deleting a link \n
         extending CreateAPIView provides us with functionalities to add a link \n
@@ -65,11 +65,20 @@ class LinkView(CreateAPIView, DestroyAPIView):
 
         queryset = self.get_queryset()
 
-        filter = {}
+        slug = self.request.data.get('slug', None)
 
-        for field in self.multiple_lookup_fields:
+        filter = { 
+            secret:secret
+        }
 
-            filter[field] = self.kwargs[field]
+        # check for the secret if user wants to do something funny
+        # i.e delete link
+
+        if not self.request.method in SAFE_METHODS:
+
+            filter['secret'] = self.request.data.get('slug', None)
+
+        # inbuilt django used
 
         obj = get_object_or_404(queryset, **filter)
 
@@ -130,20 +139,3 @@ class LinkView(CreateAPIView, DestroyAPIView):
 
         # initiate the create request
         return self.create(request, *args, **kwargs)
-
-
-    def get(self, request, slug, secret, *args, **kwargs):
-
-        """[summary] deletes a link
-        """
-
-        return self.destroy(request, slug, secret, *args, **kwargs)
-
-
-class RedirectView(APIView):
-
-    def get(self, request, slug, *args, **kwargs):
-
-        obj = get_object_or_404(Link, slug=slug)
-
-        return redirect(obj.url)

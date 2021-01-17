@@ -16,9 +16,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
-from link.views import LinkView
-
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', LinkView.as_view()),
+    path('', include('link.urls')),
 ]

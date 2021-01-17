@@ -1,8 +1,8 @@
-from rest_framework.generics import CreateAPIView, DestroyAPIView
+from rest_framework.generics import CreateAPIView, DestroyAPIView, RetrieveAPIView
 
 from rest_framework.views import APIView
 
-from .serializers import LinkSerializer
+from .serializers import LinkSerializer, PublicLinkSerializer
 
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED
 
@@ -28,6 +28,7 @@ env = environ.Env()
 # start loading the variables into memory
 environ.Env.read_env()
 
+
 class LinkView(CreateAPIView, DestroyAPIView, RetrieveAPIView):
 
     """[summary] this view provides support for adding and deleting a link \n
@@ -35,19 +36,9 @@ class LinkView(CreateAPIView, DestroyAPIView, RetrieveAPIView):
         extending DestroyAPIView provides us with functionalities to delete a link
     """
 
-    serializer_class = LinkSerializer
-
-    """[summary] the serializer to use for validation etc.
-    """
-
     # permission_classes = (IsAuthenticated,)
 
     """[summary] uncomment if you want to make sure only authenticated users can use this app
-    """
-
-    multiple_lookup_fields = ('secret', 'slug')
-
-    """[summary] fields that can be used to search for an object
     """
 
     def get_queryset(self):
@@ -57,6 +48,16 @@ class LinkView(CreateAPIView, DestroyAPIView, RetrieveAPIView):
 
         return Link.objects.all()
 
+    def get_serializer_class(self, *args, **kwargs):
+
+        serializers = {
+            'POST': LinkSerializer,
+            'DELETE': LinkSerializer,
+            'GET': PublicLinkSerializer
+        }
+
+        return serializers.get(self.request.method)
+
     def get_object(self):
 
         """[summary] Get a particular object/item from link \n
@@ -65,18 +66,27 @@ class LinkView(CreateAPIView, DestroyAPIView, RetrieveAPIView):
 
         queryset = self.get_queryset()
 
-        slug = self.request.data.get('slug', None)
-
-        filter = { 
-            secret:secret
-        }
-
         # check for the secret if user wants to do something funny
         # i.e delete link
 
         if not self.request.method in SAFE_METHODS:
 
-            filter['secret'] = self.request.data.get('slug', None)
+            slug = self.request.data.get('slug', None)
+
+            secret = self.request.data.get('secret', None)
+
+            filter = {
+                'slug': slug,
+                'secret': secret
+            }
+
+        else:
+
+            slug = self.request.GET.get('slug', None) or self.request.data.get('slug', None)
+
+            filter = {
+                'slug' : slug
+            }
 
         # inbuilt django used
 
@@ -94,7 +104,7 @@ class LinkView(CreateAPIView, DestroyAPIView, RetrieveAPIView):
         
         # hcaptcha doesn't work on localhost, therefore, we are going to use it only
         # when we go live!
-        if not env('DEBUG'):
+        if env('USE_HCAPTCHA') == "True":
 
             # Retrieve token from post data with key 'h-captcha-response'.
             token = request.data.get('h-captcha-response', False)

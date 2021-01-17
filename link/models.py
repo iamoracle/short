@@ -2,6 +2,8 @@ from django.db.models import Model, SlugField, URLField, UUIDField
 
 from uuid import uuid4
 
+from .helpers import uuid
+
 from .validators import url_exists
 
 class Link(Model):
@@ -13,7 +15,7 @@ class Link(Model):
     """[summary] this represents the link the  
     """
 
-    slug = SlugField(max_length=16, unique=True)
+    slug = SlugField(max_length=16, default=uuid, unique=True)
     """[summary] this slug or shortened version of the link  
     """
 

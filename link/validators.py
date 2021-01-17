@@ -18,6 +18,6 @@ def url_exists(url):
 
     status = response.status_code
 
-    if status >= 200 and status < 300: return True
+    if status >= 200 and status < 300: return url
     
     else: raise ValidationError(_('url does not exists'))
